@@ -1,0 +1,65 @@
+trigger:
+- none
+stages:
+- stage: Build
+  jobs:
+    - job: Build
+      displayName: Building IWA Project
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: Maven@3
+        inputs:
+          mavenPomFile: 'pom.xml'
+          mavenOptions: '-Xmx3072m'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '1.17'
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: true
+          testResultsFiles: '**/surefire-reports/TEST-*.xml'
+          goals: 'package'
+          aadSqlPassword: 
+    - job: SAST
+      displayName: Fortify SAST
+      dependsOn:
+       - Build
+      pool:
+       vmImage: 'ubuntu-latest'
+      container:
+        image: fortifydocker/fortify-ci-tools:5.4.1-jdk-17
+        #options: "--add-host=<<SSC_FQDN_NAME>>:x.x.x.x"
+        env:
+          FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN: $(_FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN)
+          FCLI_DEFAULT_SSC_USER: $(_FCLI_DEFAULT_SSC_USER)
+          FCLI_DEFAULT_SSC_PASSWORD: $(_FCLI_DEFAULT_SSC_PASSWORD)
+          FCLI_DEFAULT_SSC_CI_TOKEN: $(_FCLI_DEFAULT_SSC_CI_TOKEN)
+          FCLI_DEFAULT_SSC_URL: $(_FCLI_DEFAULT_SSC_URL)
+          SSC_APP_VERSION_ID: $(_SSC_APP_VERSION_ID)
+          SC_SAST_SENSOR_VERSION: 24.2
+      steps:
+      - script: |
+          echo Setting connection with Fortify Platform
+          #echo $FORTIFY_SSC_IP fortify.cyberxdemo.com >> /etc/hosts
+          #Use --insecure switch if the SSL certificate is self generated.
+          fcli ssc session login
+          echo analisando login ssc
+          fcli ssc session list
+
+          fcli sc-sast session login --ssc-ci-token=$FCLI_DEFAULT_SSC_CI_TOKEN --client-auth-token=$FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN  --ssc-url=$FCLI_DEFAULT_SSC_URL
+          echo analisando login sc-sast
+          fcli ssc session list
+          scancentral package -bt mvn -o package.zip
+          fcli sc-sast scan start --publish-to=$SSC_APP_VERSION_ID --sensor-version=$SC_SAST_SENSOR_VERSION --package-file=package.zip --store=Id --log-file=scan.log
+
+          echo analisando scan Id
+          fcli sc-sast scan wait-for ::Id:: --interval=30s
+          fcli ssc issue count --appversion=$SSC_APP_VERSION_ID
+
+          echo analisando log 
+          cat scan.log
+
+          echo Terminating connection with Fortify Platform
+          fcli sc-sast session logout
+          fcli ssc session logout  
+        displayName: Scan Central Scan
+        continueOnError: false
