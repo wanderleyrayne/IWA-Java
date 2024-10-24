@@ -33,7 +33,8 @@ stages:
           FCLI_DEFAULT_SSC_USER: $(_FCLI_DEFAULT_SSC_USER)
           FCLI_DEFAULT_SSC_CI_TOKEN: $(_FCLI_DEFAULT_SSC_CI_TOKEN)
           FCLI_DEFAULT_SSC_URL: $(_FCLI_DEFAULT_SSC_URL)
-          SC_SAST_SENSOR_VERSION: 24.2
+          SSC_APP_VERSION_ID: $(_SSC_APP_VERSION_ID)
+          SC_SAST_SENSOR_VERSION: 22.2
       steps:
       - script: |
           echo Setting connection with Fortify Platform
@@ -47,6 +48,7 @@ stages:
           echo analisando login sc-sast
           fcli ssc session list
           scancentral package -bt mvn -o package.zip
+          fcli ssc appversion create --auto-required-attrs --skip-if-exists $SSC_APP_VERSION_ID --issue-template Prioritized-HighRisk-Project-Template
           fcli sc-sast scan start --publish-to=$SSC_APP_VERSION_ID --sensor-version=$SC_SAST_SENSOR_VERSION --package-file=package.zip --store=Id --log-file=scan.log
 
           echo analisando scan Id
