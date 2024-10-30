@@ -31,7 +31,8 @@ stages:
         image: fortifydocker/fortify-ci-tools:5.4.1-jdk-17
         env:
           FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN: $(_FCLI_DEFAULT_SC_SAST_CLIENT_AUTH_TOKEN) # Token para autenticação do cliente ScanCentral SAST
-          FCLI_DEFAULT_SSC_USER: $(_FCLI_DEFAULT_SSC_USER)                                   # Usuário para autenticação no SSC
+          FCLI_DEFAULT_SSC_USER: $(_FCLI_DEFAULT_SSC_USER)  
+          FCLI_SSC_PASSWORD: $(_FCLI_SSC_PASSWORD)                                 # Usuário para autenticação no SSC
           FCLI_DEFAULT_SSC_CI_TOKEN: $(_FCLI_DEFAULT_SSC_CI_TOKEN)                           # Token CI para autenticação no SSC
           FCLI_DEFAULT_SSC_URL: $(_FCLI_DEFAULT_SSC_URL)                                     # URL do servidor Fortify SSC
           SSC_APP_VERSION_ID: $(_SSC_APP_VERSION_ID)                                         # ID da versão do aplicativo SSC
